@@ -13,10 +13,10 @@ var Collection *mongo.Collection
 var ctx = context.TODO()
 
 type Crypto struct {
-	Id      primitive.ObjectID
-	Name    string
-	Upvote  int64
-	Dowvote int64
+	Id       primitive.ObjectID `bson:"_id,omitempty"`
+	Name     string             `bson:"name" validate:"required"`
+	Upvote   int64              `bson:"upvote" validate:"required"`
+	Downvote int64              `bson:"downvote" validate:"required"`
 }
 
 const uri = "mongodb://root:example@localhost:27017"
@@ -35,6 +35,6 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	Collection = client.Database("tasker").Collection("tasks")
+	Collection = client.Database("crypto").Collection("cryptos")
 
 }

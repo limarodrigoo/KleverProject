@@ -59,5 +59,5 @@ message DeleteCryptoRes {
 message ListCryptosReq {}
 
 message ListCryptosRes {
-    repeated Crypto crypto = 1;
+    Crypto crypto = 1;
 }
