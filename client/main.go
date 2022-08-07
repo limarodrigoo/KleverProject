@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	pb "github.com/limarodrigoo/KleverProject/proto"
+	"github.com/limarodrigoo/KleverProject/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -42,6 +43,14 @@ func createCrypto(ctx *gin.Context) {
 	crypto := pb.CryptoCreateReq{}
 	err := ctx.ShouldBindJSON(&crypto)
 	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = service.CheckValidation(crypto.Name, crypto.Upvote, crypto.Downvote)
+
+	if err != nil {
+		fmt.Println(err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
