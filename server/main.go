@@ -11,7 +11,6 @@ import (
 	pb "github.com/limarodrigoo/KleverProject/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,25 +25,13 @@ type server struct {
 	pb.UnimplementedVotingServiceServer
 }
 
-func createCrypto(ctx context.Context, name string, upvote int64, downvote int64) *mongo.InsertOneResult {
-	crypto := bson.D{{Key: "Name", Value: name}, {Key: "Upvote", Value: upvote}, {Key: "Downvote", Value: downvote}}
-	result, err := db.Collection.InsertOne(ctx, crypto)
+func (s *server) CreateCrypto(ctx context.Context, in *pb.CryptoCreateReq) (*pb.CreateCryptoRes, error) {
+
+	crypto := bson.D{{Key: "Name", Value: in.GetName()}, {Key: "Upvote", Value: in.GetUpvote()}, {Key: "Downvote", Value: in.GetDownvote()}}
+	result, err := db.Collection.InsertOne(context.TODO(), crypto)
 	if err != nil {
 		panic(err)
 	}
-	return result
-}
-
-func (s *server) CreateCrypto(ctx context.Context, in *pb.CryptoCreateReq) (*pb.CreateCryptoRes, error) {
-	if in.GetName() == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "Verify the fields!")
-	}
-
-	if in.GetDownvote() != 0 || in.GetUpvote() != 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "Cryptos must be initialized with 0 votes")
-	}
-
-	result := createCrypto(context.TODO(), in.GetName(), in.GetUpvote(), in.GetDownvote())
 
 	oid := result.InsertedID.(primitive.ObjectID)
 
