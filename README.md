@@ -32,7 +32,7 @@ Once you get all done you have to clone the repo
 Now that you are inside the project repo you need to start your mongoDB with docker
 
 ```bash
-docker-compose up -d
+docker-compose up
 ```
 
 So in two terminals run the client and the server
