@@ -9,6 +9,7 @@ import (
 
 	"github.com/limarodrigoo/KleverProject/db"
 	pb "github.com/limarodrigoo/KleverProject/proto"
+	"github.com/limarodrigoo/KleverProject/service"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -27,7 +28,13 @@ type server struct {
 
 func (s *server) CreateCrypto(ctx context.Context, in *pb.CryptoCreateReq) (*pb.CreateCryptoRes, error) {
 
+	err := service.CheckValidation(in.GetName(), in.GetUpvote(), in.GetDownvote())
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid input: %v", err))
+	}
+
 	crypto := bson.D{{Key: "Name", Value: in.GetName()}, {Key: "Upvote", Value: in.GetUpvote()}, {Key: "Downvote", Value: in.GetDownvote()}}
+
 	result, err := db.Collection.InsertOne(context.TODO(), crypto)
 	if err != nil {
 		panic(err)
@@ -62,9 +69,6 @@ func (s *server) ListCryptos(in *pb.ListCryptosReq, stream pb.VotingService_List
 				Downvote: result.Downvote,
 			},
 		})
-	}
-	if err != nil {
-		return status.Errorf(codes.Unavailable, fmt.Sprintf("Could not decode data: %v", err))
 	}
 
 	if err := cursor.Err(); err != nil {
