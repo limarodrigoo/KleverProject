@@ -58,7 +58,8 @@ func (s *server) ListCryptos(in *pb.ListCryptosReq, stream pb.VotingService_List
 
 	for cursor.Next(context.Background()) {
 		result := db.Crypto{}
-		if err := cursor.Decode(&result); err != nil {
+		err := cursor.Decode(&result)
+		if err != nil {
 			log.Fatal(err)
 		}
 		stream.Send(&pb.ListCryptosRes{
@@ -74,7 +75,6 @@ func (s *server) ListCryptos(in *pb.ListCryptosReq, stream pb.VotingService_List
 	if err := cursor.Err(); err != nil {
 		return status.Errorf(codes.Internal, fmt.Sprintf("Unknow cursor error: %v", err))
 	}
-	defer cursor.Close(context.TODO())
 	return nil
 }
 
@@ -84,10 +84,11 @@ func (s *server) GetCrypto(ctx context.Context, in *pb.GetCryptoReq) (*pb.Crypto
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
 	result := db.Collection.FindOne(ctx, bson.M{"_id": id})
+
 	data := db.Crypto{}
 
 	if err := result.Decode(&data); err != nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find crypto with ObjectId %s: %v", in.GetId(), err))
+		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find crypto with ObjectId %s", in.GetId()))
 	}
 
 	res := &pb.Crypto{
