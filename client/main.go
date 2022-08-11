@@ -55,8 +55,6 @@ func createCrypto(ctx *gin.Context) {
 		return
 	}
 
-	fmt.Println(&crypto)
-
 	res, err := client.CreateCrypto(ctx, &crypto)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
