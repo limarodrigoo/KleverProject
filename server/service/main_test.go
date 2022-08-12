@@ -3,7 +3,7 @@ package service_test
 import (
 	"testing"
 
-	"github.com/limarodrigoo/KleverProject/service"
+	"github.com/limarodrigoo/KleverProject/server/service"
 )
 
 func TestValidation(t *testing.T) {

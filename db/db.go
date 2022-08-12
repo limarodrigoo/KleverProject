@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	pb "github.com/limarodrigoo/KleverProject/proto"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,7 +23,9 @@ type Crypto struct {
 
 const uri = "mongodb://root:example@localhost:27017"
 
-func Init() {
+var collection *mongo.Collection
+
+func init() {
 	clientOptions := options.Client().ApplyURI(uri)
 
 	client, err := mongo.Connect(context.TODO(), clientOptions)
@@ -35,6 +39,73 @@ func Init() {
 		log.Fatal(err)
 	}
 
-	Collection = client.Database("crypto").Collection("cryptos")
+	collection = client.Database("crypto").Collection("cryptos")
 
+}
+
+func CreateCryptoDb(crypto *pb.CryptoCreateReq) (*mongo.InsertOneResult, error) {
+	insertedResult, err := collection.InsertOne(context.TODO(), crypto)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return insertedResult, nil
+}
+
+func ListAllCryptos() (*mongo.Cursor, error) {
+	opts := options.Find().SetSort(bson.D{{Key: "Upvote", Value: -1}})
+
+	cursor, err := collection.Find(context.Background(), bson.D{}, opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cursor, nil
+
+}
+
+func GetCryptoById(id primitive.ObjectID) *mongo.SingleResult {
+	res := collection.FindOne(ctx, bson.M{"_id": id})
+
+	return res
+
+}
+
+func UpvoteCryptById(id primitive.ObjectID) error {
+	filter := bson.M{"_id": id}
+	update := bson.M{"$inc": bson.M{"Upvote": 1}}
+
+	_, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DownvoteCryptById(id primitive.ObjectID) error {
+	filter := bson.M{"_id": id}
+	update := bson.M{"$inc": bson.M{"Downvote": 1}}
+
+	_, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DeleteCryptoById(id primitive.ObjectID) error {
+	filter := bson.M{"_id": id}
+	_, err := collection.DeleteOne(ctx, filter)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -1,4 +1,4 @@
-package main
+package helper
 
 import (
 	"context"
@@ -7,42 +7,35 @@ import (
 
 	"github.com/limarodrigoo/KleverProject/db"
 	pb "github.com/limarodrigoo/KleverProject/proto"
-	"github.com/limarodrigoo/KleverProject/service"
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/limarodrigoo/KleverProject/server/service"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-type server struct {
+type Server struct {
 	pb.UnimplementedVotingServiceServer
 }
 
-func (s *server) CreateCrypto(ctx context.Context, in *pb.CryptoCreateReq) (*pb.CreateCryptoRes, error) {
+func (s *Server) CreateCrypto(ctx context.Context, in *pb.CryptoCreateReq) (*pb.CreateCryptoRes, error) {
 
 	err := service.CheckValidation(in.GetName(), in.GetUpvote(), in.GetDownvote())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Invalid input: %v", err))
 	}
 
-	// crypto := bson.D{{Key: "Name", Value: in.GetName()}, {Key: "Upvote", Value: in.GetUpvote()}, {Key: "Downvote", Value: in.GetDownvote()}}
 	crypto := pb.CryptoCreateReq{Name: in.GetName(), Upvote: in.GetUpvote(), Downvote: in.GetDownvote()}
 
-	result, err := db.Collection.InsertOne(context.TODO(), &crypto)
-	if err != nil {
-		panic(err)
-	}
+	result, err := db.CreateCryptoDb(&crypto)
 
 	oid := result.InsertedID.(primitive.ObjectID)
 
 	return &pb.CreateCryptoRes{Id: oid.Hex()}, nil
 }
 
-func (s *server) ListCryptos(in *pb.ListCryptosReq, stream pb.VotingService_ListCryptosServer) error {
-	opts := options.Find().SetSort(bson.D{{Key: "Upvote", Value: -1}})
+func (s *Server) ListCryptos(in *pb.ListCryptosReq, stream pb.VotingService_ListCryptosServer) error {
 
-	cursor, err := db.Collection.Find(context.Background(), bson.D{}, opts)
+	cursor, err := db.ListAllCryptos()
 
 	if err != nil {
 		return status.Errorf(codes.NotFound, fmt.Sprintf("Ops, something went wrong: %v", err))
@@ -72,12 +65,12 @@ func (s *server) ListCryptos(in *pb.ListCryptosReq, stream pb.VotingService_List
 	return nil
 }
 
-func (s *server) GetCrypto(ctx context.Context, in *pb.GetCryptoReq) (*pb.Crypto, error) {
+func (s *Server) GetCrypto(ctx context.Context, in *pb.GetCryptoReq) (*pb.Crypto, error) {
 	id, err := primitive.ObjectIDFromHex(in.GetId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
-	result := db.Collection.FindOne(ctx, bson.M{"_id": id})
+	result := db.GetCryptoById(id)
 
 	data := db.Crypto{}
 
@@ -95,7 +88,7 @@ func (s *server) GetCrypto(ctx context.Context, in *pb.GetCryptoReq) (*pb.Crypto
 	return res, nil
 }
 
-func (s *server) UpvoteCrypto(ctx context.Context, in *pb.UpvoteCryptoReq) (*pb.UpvoteCryptoRes, error) {
+func (s *Server) UpvoteCrypto(ctx context.Context, in *pb.UpvoteCryptoReq) (*pb.UpvoteCryptoRes, error) {
 	id, err := primitive.ObjectIDFromHex(in.GetId())
 
 	if err != nil {
@@ -105,10 +98,7 @@ func (s *server) UpvoteCrypto(ctx context.Context, in *pb.UpvoteCryptoReq) (*pb.
 		)
 	}
 
-	filter := bson.M{"_id": id}
-	update := bson.M{"$inc": bson.M{"Upvote": 1}}
-
-	_, err = db.Collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+	err = db.UpvoteCryptById(id)
 
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find crypto with id %s: %v", in.GetId(), err))
@@ -119,7 +109,7 @@ func (s *server) UpvoteCrypto(ctx context.Context, in *pb.UpvoteCryptoReq) (*pb.
 	}, nil
 }
 
-func (s *server) DownvoteCrypto(ctx context.Context, in *pb.DownvoteCryptoReq) (*pb.DownvoteCryptoRes, error) {
+func (s *Server) DownvoteCrypto(ctx context.Context, in *pb.DownvoteCryptoReq) (*pb.DownvoteCryptoRes, error) {
 	id, err := primitive.ObjectIDFromHex(in.GetId())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument,
@@ -127,10 +117,7 @@ func (s *server) DownvoteCrypto(ctx context.Context, in *pb.DownvoteCryptoReq) (
 		)
 	}
 
-	filter := bson.M{"_id": id}
-	update := bson.M{"$inc": bson.M{"Downvote": 1}}
-
-	_, err = db.Collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
+	err = db.DownvoteCryptById(id)
 
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Could not find crypto with id %s: %v", in.GetId(), err))
@@ -141,14 +128,14 @@ func (s *server) DownvoteCrypto(ctx context.Context, in *pb.DownvoteCryptoReq) (
 	}, nil
 }
 
-func (s *server) DeleteCrypto(ctx context.Context, in *pb.DeleteCryptoReq) (*pb.DeleteCryptoRes, error) {
+func (s *Server) DeleteCrypto(ctx context.Context, in *pb.DeleteCryptoReq) (*pb.DeleteCryptoRes, error) {
 	id, err := primitive.ObjectIDFromHex(in.GetId())
 
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("Could not convert to ObjectId: %v", err))
 	}
 
-	_, err = db.Collection.DeleteOne(ctx, bson.M{"_id": id})
+	err = db.DeleteCryptoById(id)
 
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("Cold not delete crypto with id: %s: %v", in.GetId(), err))
