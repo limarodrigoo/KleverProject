@@ -107,4 +107,5 @@ Downvote the corresponding crypto
 | `Downvote`      | `number` | **Required**. number of downvotes |
 
 
+
 Create crypto
