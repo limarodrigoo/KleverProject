@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/limarodrigoo/KleverProject/db"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -17,8 +18,8 @@ func CheckValidation(name string, upvote int64, downvote int64) error {
 
 	res := db.GetCryptoByName(name)
 
-	if res == true {
-		return status.Errorf(codes.InvalidArgument, "Crypto already created!")
+	if res.Err() != mongo.ErrNoDocuments {
+		return status.Errorf(codes.InvalidArgument, "Crypto already initialized")
 	}
 
 	return nil
