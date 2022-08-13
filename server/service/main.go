@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/limarodrigoo/KleverProject/db"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -12,6 +13,12 @@ func CheckValidation(name string, upvote int64, downvote int64) error {
 
 	if downvote != 0 || upvote != 0 {
 		return status.Errorf(codes.InvalidArgument, "Cryptos must be initialized with 0 votes")
+	}
+
+	res := db.GetCryptoByName(name)
+
+	if res == true {
+		return status.Errorf(codes.InvalidArgument, "Crypto already created!")
 	}
 
 	return nil

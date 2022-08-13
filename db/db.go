@@ -109,3 +109,14 @@ func DeleteCryptoById(id primitive.ObjectID) error {
 
 	return nil
 }
+
+func GetCryptoByName(name string) bool {
+	filter := bson.M{"name": name}
+
+	res := collection.FindOne(ctx, filter)
+
+	if res != nil {
+		return true
+	}
+	return false
+}
