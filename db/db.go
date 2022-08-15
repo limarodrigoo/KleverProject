@@ -21,7 +21,7 @@ type Crypto struct {
 	Downvote int64              `bson:"downvote" validate:"required"`
 }
 
-const uri = "mongodb://root:example@localhost:27017"
+const uri = "mongodb://root:example@mongo:27017"
 
 var collection *mongo.Collection
 
