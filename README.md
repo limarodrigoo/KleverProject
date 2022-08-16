@@ -22,6 +22,7 @@ Once you get all done you have to clone the repo
 ```bash
   git clone git@github.com:limarodrigoo/KleverProject.git
   cd KleverProject 
+  make build
 ```
 
 Now that you are inside the project repo directory you need to start your mongoDB and vote system with docker
