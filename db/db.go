@@ -9,9 +9,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-var Collection *mongo.Collection
+var collection *mongo.Collection
 var ctx = context.TODO()
 
 type Crypto struct {
@@ -22,8 +24,6 @@ type Crypto struct {
 }
 
 const uri = "mongodb://root:example@mongo:27017"
-
-var collection *mongo.Collection
 
 func init() {
 	clientOptions := options.Client().ApplyURI(uri)
@@ -60,6 +60,11 @@ func ListAllCryptos() (*mongo.Cursor, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if cursor.RemainingBatchLength() == 0 {
+		return nil, status.Errorf(codes.NotFound, "Cryptos not found")
+
 	}
 
 	return cursor, nil
