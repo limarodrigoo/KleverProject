@@ -28,7 +28,7 @@ Once you get all done you have to clone the repo
 Now that you are inside the project repo directory you need to start your mongoDB and vote system with docker
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 
