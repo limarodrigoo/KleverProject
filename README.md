@@ -21,7 +21,7 @@ Once you get all done you have to clone the repo
 
 ```bash
   git clone git@github.com:limarodrigoo/KleverProject.git
-  cd KleverProject 
+  cd VoteSystemProject 
   make build
 ```
 
